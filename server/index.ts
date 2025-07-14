@@ -10,8 +10,17 @@ const execAsync = promisify(exec);
 // Port management functions
 async function isPortInUse(port: number): Promise<boolean> {
   try {
-    const { stdout } = await execAsync(`netstat -tulpn | grep :${port}`);
-    return stdout.trim() !== '';
+    const isWindows = process.platform === 'win32';
+    
+    if (isWindows) {
+      // Windows-specific command
+      const { stdout } = await execAsync(`netstat -an | findstr :${port}`);
+      return stdout.includes(`0.0.0.0:${port}`) || stdout.includes(`127.0.0.1:${port}`);
+    } else {
+      // Unix-like systems
+      const { stdout } = await execAsync(`netstat -tulpn | grep :${port}`);
+      return stdout.trim() !== '';
+    }
   } catch (error) {
     return false;
   }
@@ -19,8 +28,24 @@ async function isPortInUse(port: number): Promise<boolean> {
 
 async function getProcessOnPort(port: number): Promise<string | null> {
   try {
-    const { stdout } = await execAsync(`lsof -ti:${port}`);
-    return stdout.trim() || null;
+    const isWindows = process.platform === 'win32';
+    
+    if (isWindows) {
+      // Windows-specific command
+      const { stdout } = await execAsync(`netstat -ano | findstr :${port}`);
+      const lines = stdout.trim().split('\n');
+      for (const line of lines) {
+        if (line.includes('LISTENING')) {
+          const parts = line.trim().split(/\s+/);
+          return parts[parts.length - 1]; // PID is the last column
+        }
+      }
+      return null;
+    } else {
+      // Unix-like systems
+      const { stdout } = await execAsync(`lsof -ti:${port}`);
+      return stdout.trim() || null;
+    }
   } catch (error) {
     return null;
   }
@@ -33,23 +58,26 @@ async function killProcessOnPort(port: number): Promise<void> {
     const pid = await getProcessOnPort(port);
     if (pid) {
       log(`Port ${port} is in use by PID ${pid}. Killing process...`);
-      await killPort(port);
+      
+      const isWindows = process.platform === 'win32';
+      if (isWindows) {
+        // Windows-specific kill command
+        await execAsync(`taskkill /PID ${pid} /F`);
+      } else {
+        // Use kill-port for Unix-like systems
+        await killPort(port);
+      }
+      
       log(`Successfully killed process on port ${port}`);
       
-      // Wait a moment for the port to be released
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait longer for Windows to release the port
+      await new Promise(resolve => setTimeout(resolve, isWindows ? 3000 : 1000));
     } else {
       log(`Port ${port} is available`);
     }
   } catch (error) {
     log(`Error managing port ${port}: ${error}`);
-    // Try alternative method
-    try {
-      await execAsync(`pkill -f "port ${port}"`);
-      log(`Alternative kill method used for port ${port}`);
-    } catch (altError) {
-      log(`Alternative kill method failed: ${altError}`);
-    }
+    // Don't try alternative methods that might cause loops
   }
 }
 
@@ -130,19 +158,9 @@ app.use((req, res, next) => {
   // Handle server errors, especially port conflicts
   server.on('error', async (err: any) => {
     if (err.code === 'EADDRINUSE') {
-      log(`Port ${port} is already in use. Attempting to kill process and restart...`);
-      await killProcessOnPort(port);
-      
-      // Retry starting the server after a brief delay
-      setTimeout(() => {
-        server.listen({
-          port,
-          host,
-          reusePort: !isWindows,
-        }, () => {
-          log(`serving on port ${port} after restart (host: ${host})`);
-        });
-      }, 2000);
+      log(`Port ${port} is already in use. Server cannot start.`);
+      log(`Please close any other applications using port ${port} and restart.`);
+      process.exit(1);
     } else {
       log(`Server error: ${err.message}`);
       throw err;

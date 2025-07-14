@@ -40,6 +40,17 @@ if errorlevel 1 (
     exit /b 1
 )
 
+REM Kill any processes on port 5000
+echo Checking for processes on port 5000...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr :5000 ^| findstr LISTENING') do (
+    echo Killing process %%a on port 5000...
+    taskkill /PID %%a /F >nul 2>&1
+)
+
+REM Wait for port to be released
+echo Waiting for port to be released...
+timeout /t 3 /nobreak >nul
+
 REM Then start the development server
 echo Starting development server...
 echo Open http://localhost:5000 in your browser
