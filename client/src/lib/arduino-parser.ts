@@ -156,6 +156,19 @@ export function generatePseudocode(actions: ParsedAction[], components: Componen
     blockType: 'Program'
   });
   
+  // Add variable declarations if needed for complex components
+  const hasMotors = components.some(c => c.type === 'dc-motor' || c.type === 'stepper');
+  const hasSensors = components.some(c => c.type === 'ultrasonic' || c.type === 'button');
+  
+  if (hasMotors || hasSensors) {
+    steps.push({
+      level: 0,
+      text: 'Add Variable Declaration blocks for component control',
+      type: 'structure',
+      blockType: 'Variables'
+    });
+  }
+  
   // Add setup section
   steps.push({
     level: 0,
@@ -164,9 +177,15 @@ export function generatePseudocode(actions: ParsedAction[], components: Componen
     blockType: 'Setup'
   });
   
-  // Add pin mode setup for each component
-  const componentPins = new Map<string, number[]>();
+  // Add serial communication for debugging
+  steps.push({
+    level: 1,
+    text: 'Add Serial Begin block (9600 baud)',
+    type: 'action',
+    blockType: 'Serial Begin'
+  });
   
+  // Add pin mode setup for each component
   for (const component of components) {
     const spec = getComponentSpec(component.type, component);
     const pins = parsePins(component.pins);
@@ -175,15 +194,28 @@ export function generatePseudocode(actions: ParsedAction[], components: Componen
       for (const pin of pins) {
         if (typeof pin === 'number') {
           const mode = spec.pinTypes[0] === 'digital' && component.type !== 'button' ? 'OUTPUT' : 'INPUT';
+          const label = component.label || spec.name;
           steps.push({
             level: 1,
-            text: `Add Pin Mode block for ${spec.name} on pin ${pin} to ${mode}`,
+            text: `Add Pin Mode block for ${label} on pin ${pin} to ${mode}`,
             type: 'action',
             blockType: 'Pin Mode'
           });
         }
       }
     }
+  }
+  
+  // Add initial motor speed settings
+  const motorComponents = components.filter(c => c.type === 'dc-motor' || c.type === 'stepper');
+  for (const motor of motorComponents) {
+    const label = motor.label || 'Motor';
+    steps.push({
+      level: 1,
+      text: `Add Variable Set block for ${label} speed to 0`,
+      type: 'action',
+      blockType: 'Variable Set'
+    });
   }
   
   // Add loop section
@@ -194,10 +226,86 @@ export function generatePseudocode(actions: ParsedAction[], components: Componen
     blockType: 'Loop'
   });
   
-  // Process actions
+  // Add sensor reading blocks if we have sensors
+  const sensorComponents = components.filter(c => c.type === 'ultrasonic' || c.type === 'button');
+  for (const sensor of sensorComponents) {
+    const pins = parsePins(sensor.pins);
+    const label = sensor.label || getComponentSpec(sensor.type, sensor)?.name || 'Sensor';
+    
+    if (sensor.type === 'ultrasonic') {
+      steps.push({
+        level: 1,
+        text: `Add Ultrasonic Read block for ${label} (trig: ${pins[0]}, echo: ${pins[1]})`,
+        type: 'action',
+        blockType: 'Ultrasonic Read'
+      });
+    } else if (sensor.type === 'button') {
+      steps.push({
+        level: 1,
+        text: `Add Digital Read block for ${label} on pin ${pins[0]}`,
+        type: 'action',
+        blockType: 'Digital Read'
+      });
+    }
+  }
+  
+  // Add analog reading for potentiometers or analog sensors
+  const analogComponents = components.filter(c => {
+    const pins = parsePins(c.pins);
+    return pins.some(pin => typeof pin === 'string' && pin.startsWith('A'));
+  });
+  
+  for (const analog of analogComponents) {
+    const pins = parsePins(analog.pins);
+    const analogPin = pins.find(pin => typeof pin === 'string' && pin.startsWith('A'));
+    if (analogPin) {
+      steps.push({
+        level: 1,
+        text: `Add Analog Read block for ${analog.label || 'Sensor'} on pin ${analogPin}`,
+        type: 'action',
+        blockType: 'Analog Read'
+      });
+      
+      steps.push({
+        level: 1,
+        text: `Add Map block to convert analog value (0-1023) to motor speed (0-255)`,
+        type: 'action',
+        blockType: 'Map'
+      });
+    }
+  }
+  
+  // Process actions from prompt
   let currentLevel = 1;
   for (const action of actions) {
     addActionSteps(action, steps, currentLevel, components);
+  }
+  
+  // Add motor control sequences for complex motor projects
+  for (const motor of motorComponents) {
+    const pins = parsePins(motor.pins);
+    const label = motor.label || 'Motor';
+    
+    steps.push({
+      level: 1,
+      text: `Add Motor Speed Set block for ${label} (use mapped speed value)`,
+      type: 'action',
+      blockType: 'Motor Speed'
+    });
+    
+    steps.push({
+      level: 1,
+      text: `Add Motor Direction block for ${label} to FORWARD`,
+      type: 'action',
+      blockType: 'Motor Direction'
+    });
+    
+    steps.push({
+      level: 1,
+      text: 'Add Delay block for 1000ms (1 second)',
+      type: 'action',
+      blockType: 'Delay'
+    });
   }
   
   return steps;
@@ -225,25 +333,25 @@ function addActionSteps(action: ParsedAction, steps: PseudocodeStep[], level: nu
         // Blink sequence
         steps.push({
           level,
-          text: `Add Set Digital Pin block for pin ${action.pin} to HIGH`,
+          text: `Add Set Digital Pin block for LED on pin ${action.pin} to HIGH`,
           type: 'action',
           blockType: 'Set Digital Pin'
         });
         steps.push({
           level,
-          text: `Add Delay block for ${action.duration} ms`,
+          text: `Add Delay block for ${action.duration || 1000} ms`,
           type: 'action',
           blockType: 'Delay'
         });
         steps.push({
           level,
-          text: `Add Set Digital Pin block for pin ${action.pin} to LOW`,
+          text: `Add Set Digital Pin block for LED on pin ${action.pin} to LOW`,
           type: 'action',
           blockType: 'Set Digital Pin'
         });
         steps.push({
           level,
-          text: `Add Delay block for ${action.duration} ms`,
+          text: `Add Delay block for ${action.duration || 1000} ms`,
           type: 'action',
           blockType: 'Delay'
         });
@@ -255,11 +363,18 @@ function addActionSteps(action: ParsedAction, steps: PseudocodeStep[], level: nu
           blockType: 'Servo Write'
         });
       } else if (action.component === 'dc-motor') {
+        // Enhanced motor control
         steps.push({
           level,
-          text: `Add Set Digital Pin block for pin ${action.pin} to ${action.value}`,
+          text: `Add Motor Speed Set block for motor on pin ${action.pin}`,
           type: 'action',
-          blockType: 'Set Digital Pin'
+          blockType: 'Motor Speed'
+        });
+        steps.push({
+          level,
+          text: `Add Motor Direction block for motor on pin ${action.pin} to FORWARD`,
+          type: 'action',
+          blockType: 'Motor Direction'
         });
         
         if (action.duration && action.duration > 0) {
@@ -271,15 +386,15 @@ function addActionSteps(action: ParsedAction, steps: PseudocodeStep[], level: nu
           });
           steps.push({
             level,
-            text: `Add Set Digital Pin block for pin ${action.pin} to LOW`,
+            text: `Add Motor Stop block for motor on pin ${action.pin}`,
             type: 'action',
-            blockType: 'Set Digital Pin'
+            blockType: 'Motor Stop'
           });
         }
       } else {
         steps.push({
           level,
-          text: `Add Set Digital Pin block for pin ${action.pin} to ${action.value}`,
+          text: `Add Set Digital Pin block for ${action.component || 'component'} on pin ${action.pin} to ${action.value}`,
           type: 'action',
           blockType: 'Set Digital Pin'
         });
@@ -303,10 +418,16 @@ function addActionSteps(action: ParsedAction, steps: PseudocodeStep[], level: nu
           type: 'action',
           blockType: 'Ultrasonic Read'
         });
+        steps.push({
+          level,
+          text: `Add Variable Set block to store distance value`,
+          type: 'action',
+          blockType: 'Variable Set'
+        });
       } else {
         steps.push({
           level,
-          text: `Add Digital Read block for pin ${action.pin}`,
+          text: `Add Digital Read block for ${action.component || 'component'} on pin ${action.pin}`,
           type: 'action',
           blockType: 'Digital Read'
         });
