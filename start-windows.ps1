@@ -45,6 +45,9 @@ Write-Host "Starting development server..." -ForegroundColor Green
 Write-Host "The server will be available at http://localhost:5000" -ForegroundColor Cyan
 Write-Host "Press Ctrl+C to stop the server" -ForegroundColor Yellow
 Write-Host ""
-
+Write-Host "Note: Server configured for Windows (127.0.0.1) to prevent socket errors" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "Setting NODE_ENV=development for proper development mode..." -ForegroundColor Green
 $env:NODE_ENV = "development"
+Write-Host "Environment configured. Starting server..." -ForegroundColor Green
 npx tsx server/index.ts

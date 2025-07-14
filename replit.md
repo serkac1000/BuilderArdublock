@@ -112,6 +112,8 @@ The application is designed as a single-page application with a Node.js backend,
 - **Improved Error Handling**: Graceful shutdown handling and robust restart mechanisms
 - **Windows Compatibility**: Added Windows batch files and PowerShell scripts for easy startup on Windows systems
 - **Cross-Platform Support**: Comprehensive setup guides for Windows, macOS, and Linux environments
+- **Windows Socket Fix**: Resolved ENOTSUP socket binding error by using localhost (127.0.0.1) instead of 0.0.0.0 on Windows
+- **Environment Configuration**: Enhanced Windows startup scripts with proper NODE_ENV handling and informative output
 
 ### Git Repository Preparation (January 2025)
 - Added comprehensive README.md with project documentation

@@ -35,5 +35,7 @@ echo.
 echo Note: The server is configured to use localhost (127.0.0.1) on Windows
 echo This resolves the ENOTSUP socket error on Windows systems
 echo.
+echo Setting NODE_ENV=development for proper development mode...
 set NODE_ENV=development
+echo Environment configured. Starting server...
 npx tsx server/index.ts
