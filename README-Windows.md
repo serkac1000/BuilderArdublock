@@ -13,15 +13,20 @@
 Open Command Prompt or PowerShell in the project directory and run:
 
 ```cmd
-# Install dependencies
+# First, install dependencies (REQUIRED)
 npm install
 
-# Start the development server
+# Then start the development server
 set NODE_ENV=development && npx tsx server/index.ts
 ```
 
+**Important**: You must run `npm install` first to install the required packages (Express, TypeScript, etc.)
+
 ### Method 3: Using cross-env (if available)
 ```cmd
+# Install dependencies first
+npm install
+
 # Install cross-env globally (one-time setup)
 npm install -g cross-env
 
@@ -31,16 +36,24 @@ npm run dev
 
 ## Troubleshooting
 
+### Error: Cannot find package 'express'
+This happens when dependencies aren't installed. Run:
+```cmd
+npm install
+```
+
 ### Error: 'NODE_ENV' is not recognized
 This happens because Windows Command Prompt doesn't support Unix-style environment variables. Use one of these solutions:
 
 **Solution 1**: Use the provided `start-windows.bat` file
 **Solution 2**: Use PowerShell instead of Command Prompt:
 ```powershell
+npm install  # Install dependencies first
 $env:NODE_ENV="development"; npx tsx server/index.ts
 ```
 **Solution 3**: Install cross-env globally:
 ```cmd
+npm install  # Install dependencies first
 npm install -g cross-env
 npm run dev
 ```
