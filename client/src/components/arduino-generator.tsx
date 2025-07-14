@@ -39,14 +39,14 @@ export function ArduinoGenerator() {
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [isGeneratingWithAI, setIsGeneratingWithAI] = useState(false);
   const [isGeneratingComponents, setIsGeneratingComponents] = useState(false);
-  
+
   const { toast } = useToast();
 
   // Update debug report when components or model changes
   useEffect(() => {
     const issues = validateComponents(components, selectedModel);
     const pinCounts = getUsedPinCounts(components);
-    
+
     const newReport: DebugReport = {
       status: issues.some(i => i.type === 'error') ? 'error' : 
               issues.some(i => i.type === 'warning') ? 'warning' : 'success',
@@ -56,7 +56,7 @@ export function ArduinoGenerator() {
       analogPinsUsed: pinCounts.analog,
       estimatedBlocks: `${Math.max(4, components.length * 2)}-${Math.max(8, components.length * 4)}`
     };
-    
+
     setDebugReport(newReport);
   }, [components, selectedModel]);
 
@@ -75,7 +75,7 @@ export function ArduinoGenerator() {
       const steps = generatePseudocode(actions, components);
       setPseudocode(steps);
       setShowPseudocode(true);
-      
+
       toast({
         title: "Pseudocode generated",
         description: `Generated ${steps.length} ArduBlock.ru compatible instructions`,
@@ -116,7 +116,7 @@ export function ArduinoGenerator() {
         setAiGeneratedCode(data.code);
         setAiExplanation(data.explanation);
         setAiSuggestions(data.suggestions || []);
-        
+
         toast({
           title: "AI code generated",
           description: "Complete Arduino code generated successfully",
@@ -166,7 +166,7 @@ export function ArduinoGenerator() {
     setProjectPrompt('');
     setComponents([]);
     setPseudocode([]);
-    
+
     toast({
       title: "Form cleared",
       description: "All inputs have been reset",
@@ -176,7 +176,7 @@ export function ArduinoGenerator() {
   const generateArduinoCode = (): string => {
     const actions = parsePrompt(projectPrompt, components);
     const { digital: digitalPins, analog: analogPins } = getUsedPinCounts(components);
-    
+
     let code = `/*
  * Arduino Code Generated from ArduBlock Pseudocode Generator
  * Model: ${ARDUINO_MODELS[selectedModel].name}
@@ -207,7 +207,7 @@ export function ArduinoGenerator() {
     code += "\nvoid setup() {\n";
     code += "  // Initialize serial communication\n";
     code += "  Serial.begin(9600);\n\n";
-    
+
     // Add pin modes
     for (const component of components) {
       const spec = getComponentSpec(component.type, component);
@@ -221,23 +221,23 @@ export function ArduinoGenerator() {
         });
       }
     }
-    
+
     code += "}\n\nvoid loop() {\n";
-    
+
     // Add main loop logic based on actions
     for (const action of actions) {
       code += generateCodeForAction(action, components, 1);
     }
-    
+
     code += "}\n";
-    
+
     return code;
   };
 
   const generateCodeForAction = (action: ParsedAction, components: Component[], indent: number = 0): string => {
     const spaces = '  '.repeat(indent);
     let code = '';
-    
+
     switch (action.type) {
       case 'set':
         if (action.component === 'led' && action.value === 'blink') {
@@ -269,7 +269,7 @@ export function ArduinoGenerator() {
         code += `${spaces}Serial.println("${action.value}");\n`;
         break;
     }
-    
+
     return code;
   };
 
@@ -285,7 +285,7 @@ Components: ${components.length}
 COMPONENTS CONFIGURATION:
 ------------------------
 `;
-    
+
     for (const component of components) {
       const spec = getComponentSpec(component.type, component);
       if (spec) {
@@ -299,7 +299,7 @@ COMPONENTS CONFIGURATION:
     content += `ARDUBLOCK.RU INSTRUCTIONS:
 --------------------------
 `;
-    
+
     for (const step of pseudocode) {
       const indent = '  '.repeat(step.level);
       content += `${indent}${step.text}\n`;
@@ -338,7 +338,7 @@ Estimated Blocks: ${debugReport.estimatedBlocks}
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
+
     toast({
       title: "Export successful",
       description: "Project instructions downloaded as TXT file",
@@ -365,7 +365,7 @@ Estimated Blocks: ${debugReport.estimatedBlocks}
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
+
     toast({
       title: "Export successful",
       description: "Arduino code downloaded as .ino file",
@@ -375,6 +375,49 @@ Estimated Blocks: ${debugReport.estimatedBlocks}
   const addPromptExample = (example: keyof typeof PROMPT_EXAMPLES) => {
     const exampleText = PROMPT_EXAMPLES[example];
     setProjectPrompt(prev => prev ? `${prev}, ${exampleText}` : exampleText);
+  };
+
+  const getModelIcon = (model: ArduinoModel) => {
+    switch (model) {
+      case 'esp32':
+        return <Wifi className="w-6 h-6" />;
+      default:
+        return <Microchip className="w-6 h-6" />;
+    }
+  };
+
+  const exportToJSON = () => {
+    const data = {
+      projectPrompt,
+      components: components.map(c => ({
+        type: c.type,
+        pins: c.pins,
+        label: c.label
+      })),
+      arduinoModel: selectedModel,
+      generatedCode,
+      timestamp: new Date().toISOString()
+    };
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `arduino-project-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToINO = () => {
+    if (!aiGeneratedCode) return;
+
+    const blob = new Blob([aiGeneratedCode], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `arduino-sketch-${Date.now()}.ino`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const getModelIcon = (model: ArduinoModel) => {
@@ -412,10 +455,10 @@ Estimated Blocks: ${debugReport.estimatedBlocks}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+
           {/* Input Panel */}
           <div className="lg:col-span-2 space-y-6">
-            
+
             {/* Arduino Model Selection */}
             <Card>
               <CardHeader>
@@ -480,7 +523,7 @@ Estimated Blocks: ${debugReport.estimatedBlocks}
                     onChange={(e) => setProjectPrompt(e.target.value)}
                   />
                 </div>
-                
+
                 <div className="flex flex-wrap gap-2">
                   {(Object.keys(PROMPT_EXAMPLES) as (keyof typeof PROMPT_EXAMPLES)[]).map((key) => (
                     <Badge
@@ -589,7 +632,7 @@ Estimated Blocks: ${debugReport.estimatedBlocks}
                       <p className="text-purple-800">{aiExplanation}</p>
                     </div>
                   )}
-                  
+
                   <div className="relative">
                     <pre className="bg-slate-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm font-mono">
                       <code>{aiGeneratedCode}</code>
