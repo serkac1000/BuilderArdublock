@@ -1,6 +1,57 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import killPort from "kill-port";
+import { exec } from "child_process";
+import { promisify } from "util";
+
+const execAsync = promisify(exec);
+
+// Port management functions
+async function isPortInUse(port: number): Promise<boolean> {
+  try {
+    const { stdout } = await execAsync(`netstat -tulpn | grep :${port}`);
+    return stdout.trim() !== '';
+  } catch (error) {
+    return false;
+  }
+}
+
+async function getProcessOnPort(port: number): Promise<string | null> {
+  try {
+    const { stdout } = await execAsync(`lsof -ti:${port}`);
+    return stdout.trim() || null;
+  } catch (error) {
+    return null;
+  }
+}
+
+async function killProcessOnPort(port: number): Promise<void> {
+  try {
+    log(`Checking if port ${port} is in use...`);
+    
+    const pid = await getProcessOnPort(port);
+    if (pid) {
+      log(`Port ${port} is in use by PID ${pid}. Killing process...`);
+      await killPort(port);
+      log(`Successfully killed process on port ${port}`);
+      
+      // Wait a moment for the port to be released
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } else {
+      log(`Port ${port} is available`);
+    }
+  } catch (error) {
+    log(`Error managing port ${port}: ${error}`);
+    // Try alternative method
+    try {
+      await execAsync(`pkill -f "port ${port}"`);
+      log(`Alternative kill method used for port ${port}`);
+    } catch (altError) {
+      log(`Alternative kill method failed: ${altError}`);
+    }
+  }
+}
 
 const app = express();
 app.use(express.json());
@@ -60,11 +111,54 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = 5000;
+  
+  // Kill any existing process on port 5000 before starting
+  await killProcessOnPort(port);
+  
   server.listen({
     port,
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+  });
+
+  // Handle server errors, especially port conflicts
+  server.on('error', async (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      log(`Port ${port} is already in use. Attempting to kill process and restart...`);
+      await killProcessOnPort(port);
+      
+      // Retry starting the server after a brief delay
+      setTimeout(() => {
+        server.listen({
+          port,
+          host: "0.0.0.0",
+          reusePort: true,
+        }, () => {
+          log(`serving on port ${port} after restart`);
+        });
+      }, 2000);
+    } else {
+      log(`Server error: ${err.message}`);
+      throw err;
+    }
+  });
+
+  // Graceful shutdown handling
+  process.on('SIGTERM', () => {
+    log('SIGTERM received, shutting down gracefully...');
+    server.close(() => {
+      log('Server closed');
+      process.exit(0);
+    });
+  });
+
+  process.on('SIGINT', () => {
+    log('SIGINT received, shutting down gracefully...');
+    server.close(() => {
+      log('Server closed');
+      process.exit(0);
+    });
   });
 })();

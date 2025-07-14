@@ -102,6 +102,15 @@ The application is designed as a single-page application with a Node.js backend,
 
 ## Recent Changes
 
+### Custom Component System and Export Improvements (January 2025)
+- **Custom Component Dialog**: Added full-featured dialog for creating custom components with configurable pin types, block categories, and ArduBlock.ru compatibility
+- **Export Format Changes**: Replaced JSON export with practical formats:
+  - **TXT Export**: Complete project instructions with ArduBlock.ru step-by-step guide
+  - **INO Export**: Ready-to-use Arduino IDE code with proper setup() and loop() functions
+- **Port Management System**: Intelligent port conflict resolution that automatically kills existing processes on port 5000 and restarts the server
+- **Enhanced Component Validation**: Updated validation system to handle custom components with proper pin type checking
+- **Improved Error Handling**: Graceful shutdown handling and robust restart mechanisms
+
 ### Git Repository Preparation (January 2025)
 - Added comprehensive README.md with project documentation
 - Updated .gitignore file with proper exclusions for Node.js projects
