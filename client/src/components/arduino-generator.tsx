@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Play, Eraser, Download, Edit, HelpCircle, Moon, Microchip, Wifi, Sparkles, Lightbulb } from 'lucide-react';
 import { ArduinoModel, Component, DebugReport, PseudocodeStep, ExportData } from '@/types/arduino';
 import { ComponentConfigurator } from './component-configurator';
@@ -39,8 +41,72 @@ export function ArduinoGenerator() {
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [isGeneratingWithAI, setIsGeneratingWithAI] = useState(false);
   const [isGeneratingComponents, setIsGeneratingComponents] = useState(false);
+  const [apiKey, setApiKey] = useState<string>('');
+  const [showApiSettings, setShowApiSettings] = useState(false);
+  const [apiStatus, setApiStatus] = useState<'unknown' | 'valid' | 'invalid'>('unknown');
 
   const { toast } = useToast();
+
+  // Load API key from localStorage on mount
+  useEffect(() => {
+    const savedApiKey = localStorage.getItem('gemini_api_key');
+    if (savedApiKey) {
+      setApiKey(savedApiKey);
+      checkApiKey(savedApiKey);
+    }
+  }, []);
+
+  const saveApiKey = async () => {
+    if (!apiKey.trim()) {
+      toast({
+        title: "API Key Required",
+        description: "Please enter your Gemini API key",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Save to server
+      const response = await apiRequest('POST', '/api/set-api-key', { apiKey });
+      
+      if (response.ok) {
+        // Save to localStorage as backup
+        localStorage.setItem('gemini_api_key', apiKey);
+        setApiStatus('valid');
+        setShowApiSettings(false);
+        
+        toast({
+          title: "API Key Saved",
+          description: "Your Gemini API key has been saved successfully",
+        });
+      } else {
+        throw new Error('Failed to save API key');
+      }
+    } catch (error) {
+      toast({
+        title: "Save Failed",
+        description: "Failed to save API key. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const checkApiKey = async (key?: string) => {
+    const keyToCheck = key || apiKey;
+    if (!keyToCheck) return;
+
+    try {
+      const response = await apiRequest('POST', '/api/test-api-key', { apiKey: keyToCheck });
+      if (response.ok) {
+        setApiStatus('valid');
+      } else {
+        setApiStatus('invalid');
+      }
+    } catch (error) {
+      setApiStatus('invalid');
+    }
+  };
 
   // Update debug report when components or model changes
   useEffect(() => {
@@ -395,7 +461,7 @@ Estimated Blocks: ${debugReport.estimatedBlocks}
         label: c.label
       })),
       arduinoModel: selectedModel,
-      generatedCode,
+      aiGeneratedCode,
       timestamp: new Date().toISOString()
     };
 
@@ -420,15 +486,6 @@ Estimated Blocks: ${debugReport.estimatedBlocks}
     URL.revokeObjectURL(url);
   };
 
-  const getModelIcon = (model: ArduinoModel) => {
-    switch (model) {
-      case 'esp32':
-        return <Wifi className="w-6 h-6" />;
-      default:
-        return <Microchip className="w-6 h-6" />;
-    }
-  };
-
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
@@ -445,6 +502,15 @@ Estimated Blocks: ${debugReport.estimatedBlocks}
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowApiSettings(true)}
+                className={`relative ${apiStatus === 'valid' ? 'text-green-600' : apiStatus === 'invalid' ? 'text-red-600' : 'text-slate-500'}`}
+              >
+                <span className="text-sm mr-2">API</span>
+                <div className={`w-2 h-2 rounded-full ${apiStatus === 'valid' ? 'bg-green-500' : apiStatus === 'invalid' ? 'bg-red-500' : 'bg-slate-400'}`} />
+              </Button>
               <Button variant="ghost" size="sm" onClick={() => setShowHelp(true)}>
                 <HelpCircle className="w-5 h-5" />
               </Button>
@@ -665,6 +731,63 @@ Estimated Blocks: ${debugReport.estimatedBlocks}
           </div>
         )}
       </div>
+
+      {/* API Settings Dialog */}
+      <Dialog open={showApiSettings} onOpenChange={setShowApiSettings}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>API Settings</DialogTitle>
+            <DialogDescription>
+              Configure your Google Gemini API key to enable AI-powered code generation.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="api-key" className="text-sm font-medium">
+                Gemini API Key
+              </Label>
+              <Input
+                id="api-key"
+                type="password"
+                placeholder="Enter your Gemini API key"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                className="mt-1"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Get your API key from{' '}
+                <a 
+                  href="https://aistudio.google.com/app/apikey" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  Google AI Studio
+                </a>
+              </p>
+            </div>
+            
+            {apiStatus !== 'unknown' && (
+              <div className={`p-3 rounded-md text-sm ${
+                apiStatus === 'valid' 
+                  ? 'bg-green-50 text-green-800 border border-green-200' 
+                  : 'bg-red-50 text-red-800 border border-red-200'
+              }`}>
+                {apiStatus === 'valid' ? '✓ API key is valid' : '✗ API key is invalid or has insufficient permissions'}
+              </div>
+            )}
+            
+            <div className="flex justify-between space-x-2">
+              <Button variant="outline" onClick={() => checkApiKey()}>
+                Test API Key
+              </Button>
+              <Button onClick={saveApiKey}>
+                Save API Key
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Help Modal */}
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />

@@ -46,6 +46,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // API key management endpoints
+  app.post("/api/set-api-key", (req, res) => {
+    try {
+      const { apiKey } = req.body;
+      if (!apiKey) {
+        return res.status(400).json({ error: "API key is required" });
+      }
+      
+      // Set the environment variable for this session
+      process.env.GEMINI_API_KEY = apiKey;
+      
+      res.json({ success: true, message: "API key saved successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to save API key" });
+    }
+  });
+
+  app.post("/api/test-api-key", async (req, res) => {
+    try {
+      const { apiKey } = req.body;
+      if (!apiKey) {
+        return res.status(400).json({ error: "API key is required" });
+      }
+
+      // Temporarily set the API key for testing
+      const originalKey = process.env.GEMINI_API_KEY;
+      process.env.GEMINI_API_KEY = apiKey;
+
+      // Test with a simple request
+      const testRequest = {
+        prompt: "Test",
+        components: [],
+        arduinoModel: "uno" as const
+      };
+
+      await generateArduinoCode(testRequest);
+      
+      // Restore original key
+      process.env.GEMINI_API_KEY = originalKey;
+      
+      res.json({ valid: true });
+    } catch (error) {
+      // Restore original key on error
+      const originalKey = process.env.GEMINI_API_KEY;
+      process.env.GEMINI_API_KEY = originalKey;
+      
+      res.status(400).json({ 
+        valid: false, 
+        error: error instanceof Error ? error.message : "Invalid API key" 
+      });
+    }
+  });
+
   // Add test routes for debugging
   addTestRoutes(app);
 
