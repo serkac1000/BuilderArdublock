@@ -21,6 +21,11 @@ export interface ArduinoCodeResponse {
 export async function generateArduinoCode(request: ArduinoCodeRequest): Promise<ArduinoCodeResponse> {
   const { prompt, components, arduinoModel } = request;
   
+  // Check if API key is available
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("Gemini API key is not configured. Please set your API key in the settings.");
+  }
+  
   const componentsDescription = components.map(c => 
     `${c.label || c.type} (${c.type}) on pin(s) ${c.pins}`
   ).join(', ');
@@ -46,6 +51,10 @@ Respond with JSON in this format:
 }`;
 
   try {
+    console.log("Generating Arduino code with Gemini API...");
+    console.log("API Key length:", process.env.GEMINI_API_KEY.length);
+    console.log("Request:", { prompt, components: components.length, arduinoModel });
+    
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       config: {
@@ -67,15 +76,31 @@ Respond with JSON in this format:
       contents: `Generate Arduino code for: ${prompt}`
     });
 
+    console.log("Gemini response received");
     const rawJson = response.text;
     if (rawJson) {
-      return JSON.parse(rawJson);
+      console.log("Response text length:", rawJson.length);
+      const result = JSON.parse(rawJson);
+      console.log("Successfully parsed JSON response");
+      return result;
     } else {
       throw new Error("Empty response from Gemini");
     }
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    throw new Error(`Failed to generate Arduino code: ${error}`);
+    console.error("Gemini API Error details:", error);
+    console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
+    
+    if (error instanceof Error) {
+      if (error.message.includes("API_KEY")) {
+        throw new Error("Invalid Gemini API key. Please check your API key in settings.");
+      } else if (error.message.includes("quota")) {
+        throw new Error("API quota exceeded. Please check your Gemini API usage limits.");
+      } else if (error.message.includes("network") || error.message.includes("fetch")) {
+        throw new Error("Network error connecting to Gemini API. Please try again.");
+      }
+    }
+    
+    throw new Error(`Failed to generate Arduino code: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

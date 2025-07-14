@@ -13,17 +13,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Add a simple health check endpoint
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", timestamp: new Date().toISOString() });
+    res.json({ 
+      status: "ok", 
+      timestamp: new Date().toISOString(),
+      apiKeyConfigured: !!process.env.GEMINI_API_KEY,
+      apiKeyLength: process.env.GEMINI_API_KEY?.length || 0
+    });
   });
 
   // AI-powered Arduino code generation
   app.post("/api/generate-code", async (req, res) => {
     try {
+      console.log("Received code generation request:", {
+        hasApiKey: !!process.env.GEMINI_API_KEY,
+        bodyKeys: Object.keys(req.body),
+        prompt: req.body.prompt?.substring(0, 100) + "..." // Log first 100 chars
+      });
+      
       const request: ArduinoCodeRequest = req.body;
+      
+      // Validate request
+      if (!request.prompt || !request.arduinoModel) {
+        return res.status(400).json({
+          error: "Missing required fields",
+          details: "prompt and arduinoModel are required"
+        });
+      }
+      
       const result = await generateArduinoCode(request);
+      console.log("Code generation successful");
       res.json(result);
     } catch (error) {
       console.error("Code generation error:", error);
+      console.error("Error details:", {
+        message: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : "No stack trace"
+      });
+      
       res.status(500).json({ 
         error: "Failed to generate Arduino code",
         details: error instanceof Error ? error.message : "Unknown error"
