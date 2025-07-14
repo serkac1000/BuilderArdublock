@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -686,6 +685,22 @@ Estimated Blocks: ${debugReport.estimatedBlocks}
               >
                 <Download className="w-4 h-4" />
                 <span>Export INO</span>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const dataStr = JSON.stringify(debugReport, null, 2);
+                  const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                  const exportFileDefaultName = 'debug-report.json';
+                  const linkElement = document.createElement('a');
+                  linkElement.setAttribute('href', dataUri);
+                  linkElement.setAttribute('download', exportFileDefaultName);
+                  linkElement.click();
+                }}
+                className="flex items-center justify-center space-x-2"
+              >
+                <Download className="w-4 h-4" />
+                <span>Export JSON</span>
               </Button>
             </div>
           </div>
