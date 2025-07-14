@@ -7,7 +7,7 @@ export function validateComponents(components: Component[], model: ArduinoModel)
   const arduinoSpec = getArduinoSpec(model);
 
   for (const component of components) {
-    const componentSpec = getComponentSpec(component.type);
+    const componentSpec = getComponentSpec(component.type, component);
     
     if (!componentSpec) {
       issues.push({

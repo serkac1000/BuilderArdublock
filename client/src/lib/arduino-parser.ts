@@ -168,7 +168,7 @@ export function generatePseudocode(actions: ParsedAction[], components: Componen
   const componentPins = new Map<string, number[]>();
   
   for (const component of components) {
-    const spec = getComponentSpec(component.type);
+    const spec = getComponentSpec(component.type, component);
     const pins = parsePins(component.pins);
     
     if (spec && pins.length > 0) {

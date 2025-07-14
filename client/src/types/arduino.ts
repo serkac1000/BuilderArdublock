@@ -8,13 +8,18 @@ export interface ArduinoSpec {
   description: string;
 }
 
-export type ComponentType = 'led' | 'servo' | 'dc-motor' | 'ultrasonic' | 'button' | 'lcd' | 'buzzer' | 'stepper';
+export type ComponentType = 'led' | 'servo' | 'dc-motor' | 'ultrasonic' | 'button' | 'lcd' | 'buzzer' | 'stepper' | 'custom';
 
 export interface Component {
   id: string;
   type: ComponentType;
   pins: string;
   label?: string;
+  customName?: string;
+  customPinCount?: number;
+  customPinTypes?: ('digital' | 'analog' | 'pwm')[];
+  customBlocks?: string[];
+  customCategory?: string;
 }
 
 export interface ComponentSpec {

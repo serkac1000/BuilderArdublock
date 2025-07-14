@@ -3,10 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Plus, Info } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { Trash2, Plus, Info, Settings } from 'lucide-react';
 import { Component, ComponentType, ArduinoModel } from '@/types/arduino';
 import { COMPONENT_DATABASE, getArduinoSpec } from '@/lib/component-database';
 import { nanoid } from 'nanoid';
+import { useState } from 'react';
 
 interface ComponentConfiguratorProps {
   components: Component[];
@@ -20,6 +24,14 @@ export function ComponentConfigurator({
   arduinoModel 
 }: ComponentConfiguratorProps) {
   const arduinoSpec = getArduinoSpec(arduinoModel);
+  const [isCustomDialogOpen, setIsCustomDialogOpen] = useState(false);
+  const [customComponentConfig, setCustomComponentConfig] = useState({
+    name: '',
+    pinCount: 1,
+    pinTypes: ['digital'] as ('digital' | 'analog' | 'pwm')[],
+    blocks: '',
+    category: ''
+  });
 
   const addComponent = () => {
     const newComponent: Component = {
@@ -43,8 +55,49 @@ export function ComponentConfigurator({
     );
   };
 
-  const getPlaceholderText = (componentType: ComponentType): string => {
-    const spec = COMPONENT_DATABASE[componentType];
+  const addCustomComponent = () => {
+    if (!customComponentConfig.name) return;
+    
+    const newComponent: Component = {
+      id: nanoid(),
+      type: 'custom',
+      pins: '',
+      label: customComponentConfig.name,
+      customName: customComponentConfig.name,
+      customPinCount: customComponentConfig.pinCount,
+      customPinTypes: customComponentConfig.pinTypes,
+      customBlocks: customComponentConfig.blocks ? customComponentConfig.blocks.split(',').map(b => b.trim()) : ['Custom Block'],
+      customCategory: customComponentConfig.category || 'Custom'
+    };
+    
+    onComponentsChange([...components, newComponent]);
+    setIsCustomDialogOpen(false);
+    setCustomComponentConfig({
+      name: '',
+      pinCount: 1,
+      pinTypes: ['digital'],
+      blocks: '',
+      category: ''
+    });
+  };
+
+  const getComponentDisplayName = (component: Component): string => {
+    if (component.type === 'custom' && component.customName) {
+      return component.customName;
+    }
+    return COMPONENT_DATABASE[component.type]?.name || component.type;
+  };
+
+  const getPlaceholderText = (component: Component): string => {
+    if (component.type === 'custom' && component.customPinCount) {
+      if (component.customPinCount === 1) {
+        return '13';
+      } else {
+        return Array.from({ length: component.customPinCount }, (_, i) => i + 2).join(',');
+      }
+    }
+    
+    const spec = COMPONENT_DATABASE[component.type];
     if (!spec) return '';
     
     if (spec.pinCount === 1) {
@@ -66,10 +119,100 @@ export function ComponentConfigurator({
             </div>
             <span>Components & Pin Assignment</span>
           </CardTitle>
-          <Button onClick={addComponent} size="sm">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Component
-          </Button>
+          <div className="flex space-x-2">
+            <Button onClick={addComponent} size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Component
+            </Button>
+            <Dialog open={isCustomDialogOpen} onOpenChange={setIsCustomDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Custom Component
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Add Custom Component</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div>
+                    <Label htmlFor="customName">Component Name</Label>
+                    <Input
+                      id="customName"
+                      placeholder="e.g., Temperature Sensor, RGB LED Strip"
+                      value={customComponentConfig.name}
+                      onChange={(e) => setCustomComponentConfig(prev => ({ ...prev, name: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="customPinCount">Number of Pins</Label>
+                    <Input
+                      id="customPinCount"
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={customComponentConfig.pinCount}
+                      onChange={(e) => setCustomComponentConfig(prev => ({ ...prev, pinCount: parseInt(e.target.value) || 1 }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Pin Types</Label>
+                    <div className="flex space-x-4 mt-2">
+                      {(['digital', 'analog', 'pwm'] as const).map(type => (
+                        <div key={type} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={type}
+                            checked={customComponentConfig.pinTypes.includes(type)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setCustomComponentConfig(prev => ({
+                                  ...prev,
+                                  pinTypes: [...prev.pinTypes, type]
+                                }));
+                              } else {
+                                setCustomComponentConfig(prev => ({
+                                  ...prev,
+                                  pinTypes: prev.pinTypes.filter(t => t !== type)
+                                }));
+                              }
+                            }}
+                          />
+                          <Label htmlFor={type} className="text-sm capitalize">{type}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="customBlocks">ArduBlock Blocks (comma-separated)</Label>
+                    <Textarea
+                      id="customBlocks"
+                      placeholder="e.g., Read Temperature, Set RGB Color, Custom Function"
+                      value={customComponentConfig.blocks}
+                      onChange={(e) => setCustomComponentConfig(prev => ({ ...prev, blocks: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="customCategory">ArduBlock Category</Label>
+                    <Input
+                      id="customCategory"
+                      placeholder="e.g., Sensors, Actuators, Communication"
+                      value={customComponentConfig.category}
+                      onChange={(e) => setCustomComponentConfig(prev => ({ ...prev, category: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setIsCustomDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={addCustomComponent} disabled={!customComponentConfig.name}>
+                    Add Component
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -90,21 +233,16 @@ export function ComponentConfigurator({
                     <Label className="text-sm font-medium text-slate-700 mb-1">
                       Component Type
                     </Label>
-                    <Select 
-                      value={component.type} 
-                      onValueChange={(value: ComponentType) => updateComponent(component.id, 'type', value)}
-                    >
-                      <SelectTrigger className="text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(COMPONENT_DATABASE).map(([key, spec]) => (
-                          <SelectItem key={key} value={key}>
-                            {spec.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="text-sm p-2 bg-white border rounded-md">
+                      {component.type === 'custom' && component.customName ? (
+                        <span className="font-medium">{component.customName}</span>
+                      ) : (
+                        COMPONENT_DATABASE[component.type]?.name || component.type
+                      )}
+                      {component.type === 'custom' && (
+                        <span className="text-slate-500 ml-2">(Custom)</span>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700 mb-1">
@@ -113,7 +251,7 @@ export function ComponentConfigurator({
                     <Input
                       type="text"
                       className="text-sm"
-                      placeholder={getPlaceholderText(component.type)}
+                      placeholder={getPlaceholderText(component)}
                       value={component.pins}
                       onChange={(e) => updateComponent(component.id, 'pins', e.target.value)}
                     />

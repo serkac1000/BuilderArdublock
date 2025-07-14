@@ -83,6 +83,13 @@ export const COMPONENT_DATABASE: Record<string, ComponentSpec> = {
     blocks: ['Stepper Step', 'Stepper Speed'],
     arduBlockCategory: 'Motor',
     pinLabels: ['in1', 'in2', 'in3', 'in4']
+  },
+  custom: {
+    name: 'Custom Component',
+    pinTypes: ['digital'],
+    pinCount: 1,
+    blocks: ['Custom Block'],
+    arduBlockCategory: 'Custom'
   }
 };
 
@@ -93,7 +100,17 @@ export const PROMPT_EXAMPLES = {
   conditional: 'If button on pin 2 is pressed, turn on LED on pin 13 and buzzer on pin 12'
 };
 
-export function getComponentSpec(type: string): ComponentSpec | undefined {
+export function getComponentSpec(type: string, component?: any): ComponentSpec | undefined {
+  if (type === 'custom' && component) {
+    // Return custom component spec from component data
+    return {
+      name: component.customName || 'Custom Component',
+      pinTypes: component.customPinTypes || ['digital'],
+      pinCount: component.customPinCount || 1,
+      blocks: component.customBlocks || ['Custom Block'],
+      arduBlockCategory: component.customCategory || 'Custom'
+    };
+  }
   return COMPONENT_DATABASE[type];
 }
 
