@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Play, Eraser, Download, Edit, HelpCircle, Moon, Microchip, Wifi, Sparkles, Lightbulb } from 'lucide-react';
+import { Play, Eraser, Download, Edit, HelpCircle, Moon, Microchip, Wifi, Sparkles, Lightbulb, Key, Check, X } from 'lucide-react';
 import { ArduinoModel, Component, DebugReport, PseudocodeStep, ExportData } from '@/types/arduino';
 import { ComponentConfigurator } from './component-configurator';
 import { DebugPanel } from './debug-panel';
@@ -44,6 +44,8 @@ export function ArduinoGenerator() {
   const [apiKey, setApiKey] = useState<string>('');
   const [showApiSettings, setShowApiSettings] = useState(false);
   const [apiStatus, setApiStatus] = useState<'unknown' | 'valid' | 'invalid'>('unknown');
+  const [isTestingApiKey, setIsTestingApiKey] = useState(false);
+  const [apiKeyValid, setApiKeyValid] = useState<boolean | null>(null);
 
   const { toast } = useToast();
 
@@ -69,13 +71,13 @@ export function ArduinoGenerator() {
     try {
       // Save to server
       const response = await apiRequest('POST', '/api/set-api-key', { apiKey });
-      
+
       if (response.ok) {
         // Save to localStorage as backup
         localStorage.setItem('gemini_api_key', apiKey);
         setApiStatus('valid');
         setShowApiSettings(false);
-        
+
         toast({
           title: "API Key Saved",
           description: "Your Gemini API key has been saved successfully",
@@ -486,6 +488,62 @@ Estimated Blocks: ${debugReport.estimatedBlocks}
     URL.revokeObjectURL(url);
   };
 
+  const testApiKey = async (keyToTest: string) => {
+    setIsTestingApiKey(true);
+    try {
+      const response = await apiRequest('POST', '/api/test-api-key', {
+        apiKey: keyToTest
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setApiKeyValid(data.valid);
+        return data.valid;
+      }
+    } catch (error) {
+      console.error('Error testing API key:', error);
+      setApiKeyValid(false);
+      return false;
+    } finally {
+      setIsTestingApiKey(false);
+    }
+    return false;
+  };
+
+  const saveApiKey = async () => {
+    if (!apiKey.trim()) {
+      alert('Please enter an API key');
+      return;
+    }
+
+    const isValid = await testApiKey(apiKey);
+    if (!isValid) {
+      alert('Invalid API key. Please check your key and try again.');
+      return;
+    }
+
+    try {
+      const response = await apiRequest('POST', '/api/set-api-key', {
+        apiKey: apiKey
+      });
+
+      if (response.ok) {
+        setShowApiSettings(false);
+        localStorage.setItem('gemini_api_key', apiKey);
+        setApiStatus('valid');
+        toast({
+          title: "API Key Saved",
+          description: "Your Gemini API key has been saved successfully",
+        });
+      } else {
+        alert('Failed to save API key');
+      }
+    } catch (error) {
+      console.error('Error saving API key:', error);
+      alert('Error saving API key');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
@@ -766,7 +824,7 @@ Estimated Blocks: ${debugReport.estimatedBlocks}
                 </a>
               </p>
             </div>
-            
+
             {apiStatus !== 'unknown' && (
               <div className={`p-3 rounded-md text-sm ${
                 apiStatus === 'valid' 
@@ -776,7 +834,7 @@ Estimated Blocks: ${debugReport.estimatedBlocks}
                 {apiStatus === 'valid' ? '✓ API key is valid' : '✗ API key is invalid or has insufficient permissions'}
               </div>
             )}
-            
+
             <div className="flex justify-between space-x-2">
               <Button variant="outline" onClick={() => checkApiKey()}>
                 Test API Key
