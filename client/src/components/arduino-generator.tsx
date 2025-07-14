@@ -1,3 +1,6 @@
+` tags.
+```
+<replit_final_file>
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,7 +37,7 @@ export function ArduinoGenerator() {
     estimatedBlocks: '8-12'
   });
   const [pseudocode, setPseudocode] = useState<PseudocodeStep[]>([]);
-  const [showPseudocode, setShowPseudocode] = useState(true);
+  const [showPseudocode, setShowPseudocode> = useState(true);
   const [showHelp, setShowHelp] = useState(false);
   const [aiGeneratedCode, setAiGeneratedCode] = useState<string>('');
   const [aiExplanation, setAiExplanation] = useState<string>('');
@@ -510,39 +513,7 @@ Estimated Blocks: ${debugReport.estimatedBlocks}
     return false;
   };
 
-  const saveApiKey = async () => {
-    if (!apiKey.trim()) {
-      alert('Please enter an API key');
-      return;
-    }
-
-    const isValid = await testApiKey(apiKey);
-    if (!isValid) {
-      alert('Invalid API key. Please check your key and try again.');
-      return;
-    }
-
-    try {
-      const response = await apiRequest('POST', '/api/set-api-key', {
-        apiKey: apiKey
-      });
-
-      if (response.ok) {
-        setShowApiSettings(false);
-        localStorage.setItem('gemini_api_key', apiKey);
-        setApiStatus('valid');
-        toast({
-          title: "API Key Saved",
-          description: "Your Gemini API key has been saved successfully",
-        });
-      } else {
-        alert('Failed to save API key');
-      }
-    } catch (error) {
-      console.error('Error saving API key:', error);
-      alert('Error saving API key');
-    }
-  };
+  
 
   return (
     <div className="min-h-screen bg-slate-50">
