@@ -1,0 +1,75 @@
+Generating Arduino code with Gemini API...
+API Key length: 39
+Request: {
+  prompt: 'Blink LED on pin 13 for 1 second ',
+  components: 2,
+  arduinoModel: 'uno'
+}
+Gemini API Error details: ApiError: {"error":{"code":403,"message":"Method doesn't allow unregistered callers (callers without established identity). Please use API Key or other form of API consumer identity to call this API.","status":"PERMISSION_DENIED"}}
+    at throwErrorIfNotOK (C:\Users\HOT\Downloads\18\BuilderArdublock-main\node_modules\@google\genai\src\_api_client.ts:760:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\HOT\Downloads\18\BuilderArdublock-main\node_modules\@google\genai\src\_api_client.ts:490:9)
+    at async Models.Models.generateContent (C:\Users\HOT\Downloads\18\BuilderArdublock-main\node_modules\@google\genai\src\models.ts:79:14)
+    at async generateArduinoCode (C:\Users\HOT\Downloads\18\BuilderArdublock-main\server\gemini.ts:58:22)
+    at async <anonymous> (C:\Users\HOT\Downloads\18\BuilderArdublock-main\server\routes.ts:43:22) {
+  status: 403
+}
+Error stack: ApiError: {"error":{"code":403,"message":"Method doesn't allow unregistered callers (callers without established identity). Please use API Key or other form of API consumer identity to call this API.","status":"PERMISSION_DENIED"}}
+    at throwErrorIfNotOK (C:\Users\HOT\Downloads\18\BuilderArdublock-main\node_modules\@google\genai\src\_api_client.ts:760:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\HOT\Downloads\18\BuilderArdublock-main\node_modules\@google\genai\src\_api_client.ts:490:9)
+    at async Models.Models.generateContent (C:\Users\HOT\Downloads\18\BuilderArdublock-main\node_modules\@google\genai\src\models.ts:79:14)
+    at async generateArduinoCode (C:\Users\HOT\Downloads\18\BuilderArdublock-main\server\gemini.ts:58:22)
+    at async <anonymous> (C:\Users\HOT\Downloads\18\BuilderArdublock-main\server\routes.ts:43:22)
+Code generation error: Error: Failed to generate Arduino code: {"error":{"code":403,"message":"Method doesn't allow unregistered callers (callers without established identity). Please use API Key or other form of API consumer identity to call this API.","status":"PERMISSION_DENIED"}}
+    at generateArduinoCode (C:\Users\HOT\Downloads\18\BuilderArdublock-main\server\gemini.ts:103:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\HOT\Downloads\18\BuilderArdublock-main\server\routes.ts:43:22)
+Error details: {
+  message: `Failed to generate Arduino code: {"error":{"code":403,"message":"Method doesn't allow unregistered callers (callers without established identity). Please use API Key or other form of API consumer identity to call this API.","status":"PERMISSION_DENIED"}}`,
+  stack: `Error: Failed to generate Arduino code: {"error":{"code":403,"message":"Method doesn't allow unregistered callers (callers without established identity). Please use API Key or other form of API consumer identity to call this API.","status":"PERMISSION_DENIED"}}\n` +
+    '    at generateArduinoCode (C:\\Users\\HOT\\Downloads\\18\\BuilderArdublock-main\\server\\gemini.ts:103:11)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async <anonymous> (C:\\Users\\HOT\\Downloads\\18\\BuilderArdublock-main\\server\\routes.ts:43:22)'
+}
+3:43:28 PM [express] POST /api/generate-code 500 in 195ms :: {"error":"Failed to generate Arduino co…
+Received code generation request: {
+  hasApiKey: true,
+  bodyKeys: [ 'prompt', 'components', 'arduinoModel' ],
+  prompt: 'Blink LED on pin 13 for 1 second ...'
+}
+Generating Arduino code with Gemini API...
+API Key length: 39
+Request: {
+  prompt: 'Blink LED on pin 13 for 1 second ',
+  components: 2,
+  arduinoModel: 'uno'
+}
+Gemini API Error details: ApiError: {"error":{"code":403,"message":"Method doesn't allow unregistered callers (callers without established identity). Please use API Key or other form of API consumer identity to call this API.","status":"PERMISSION_DENIED"}}
+    at throwErrorIfNotOK (C:\Users\HOT\Downloads\18\BuilderArdublock-main\node_modules\@google\genai\src\_api_client.ts:760:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\HOT\Downloads\18\BuilderArdublock-main\node_modules\@google\genai\src\_api_client.ts:490:9)
+    at async Models.Models.generateContent (C:\Users\HOT\Downloads\18\BuilderArdublock-main\node_modules\@google\genai\src\models.ts:79:14)
+    at async generateArduinoCode (C:\Users\HOT\Downloads\18\BuilderArdublock-main\server\gemini.ts:58:22)
+    at async <anonymous> (C:\Users\HOT\Downloads\18\BuilderArdublock-main\server\routes.ts:43:22) {
+  status: 403
+}
+Error stack: ApiError: {"error":{"code":403,"message":"Method doesn't allow unregistered callers (callers without established identity). Please use API Key or other form of API consumer identity to call this API.","status":"PERMISSION_DENIED"}}
+    at throwErrorIfNotOK (C:\Users\HOT\Downloads\18\BuilderArdublock-main\node_modules\@google\genai\src\_api_client.ts:760:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\HOT\Downloads\18\BuilderArdublock-main\node_modules\@google\genai\src\_api_client.ts:490:9)
+    at async Models.Models.generateContent (C:\Users\HOT\Downloads\18\BuilderArdublock-main\node_modules\@google\genai\src\models.ts:79:14)
+    at async generateArduinoCode (C:\Users\HOT\Downloads\18\BuilderArdublock-main\server\gemini.ts:58:22)
+    at async <anonymous> (C:\Users\HOT\Downloads\18\BuilderArdublock-main\server\routes.ts:43:22)
+Code generation error: Error: Failed to generate Arduino code: {"error":{"code":403,"message":"Method doesn't allow unregistered callers (callers without established identity). Please use API Key or other form of API consumer identity to call this API.","status":"PERMISSION_DENIED"}}
+    at generateArduinoCode (C:\Users\HOT\Downloads\18\BuilderArdublock-main\server\gemini.ts:103:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\HOT\Downloads\18\BuilderArdublock-main\server\routes.ts:43:22)
+Error details: {
+  message: `Failed to generate Arduino code: {"error":{"code":403,"message":"Method doesn't allow unregistered callers (callers without established identity). Please use API Key or other form of API consumer identity to call this API.","status":"PERMISSION_DENIED"}}`,
+  stack: `Error: Failed to generate Arduino code: {"error":{"code":403,"message":"Method doesn't allow unregistered callers (callers without established identity). Please use API Key or other form of API consumer identity to call this API.","status":"PERMISSION_DENIED"}}\n` +
+    '    at generateArduinoCode (C:\\Users\\HOT\\Downloads\\18\\BuilderArdublock-main\\server\\gemini.ts:103:11)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async <anonymous> (C:\\Users\\HOT\\Downloads\\18\\BuilderArdublock-main\\server\\routes.ts:43:22)'
+}
+3:43:37 PM [express] POST /api/generate-code 500 in 178ms :: {"error":"Failed to generate Arduino co…
