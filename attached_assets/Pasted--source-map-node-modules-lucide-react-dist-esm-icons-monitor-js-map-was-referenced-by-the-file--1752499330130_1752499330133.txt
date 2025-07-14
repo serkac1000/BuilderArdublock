@@ -1,0 +1,131 @@
+ source map "node_modules/lucide-react/dist/esm/icons/monitor.js.map" was referenced by the
+  file "node_modules/lucide-react/dist/esm/icons/monitor.js" here:
+
+    node_modules/lucide-react/dist/esm/icons/monitor.js:17:21:
+      17 │ //# sourceMappingURL=monitor.js.map
+         ╵                      ~~~~~~~~~~~~~~
+
+X [ERROR] Unexpected end of file in source map
+
+    node_modules/lucide-react/dist/esm/icons/monitor-x.js.map:1:0:
+      1 │
+        ╵ ^
+
+  The source map "node_modules/lucide-react/dist/esm/icons/monitor-x.js.map" was referenced by the
+  file "node_modules/lucide-react/dist/esm/icons/monitor-x.js" here:
+
+    node_modules/lucide-react/dist/esm/icons/monitor-x.js:19:21:
+      19 │ //# sourceMappingURL=monitor-x.js.map
+         ╵                      ~~~~~~~~~~~~~~~~
+
+X [ERROR] Unexpected end of file in source map
+
+    node_modules/lucide-react/dist/esm/icons/monitor-speaker.js.map:1:0:
+      1 │
+        ╵ ^
+
+  The source map "node_modules/lucide-react/dist/esm/icons/monitor-speaker.js.map" was referenced by
+  the file "node_modules/lucide-react/dist/esm/icons/monitor-speaker.js" here:
+
+    node_modules/lucide-react/dist/esm/icons/monitor-speaker.js:19:21:
+      19 │ //# sourceMappingURL=monitor-speaker.js.map
+         ╵                      ~~~~~~~~~~~~~~~~~~~~~~
+
+X [ERROR] Unexpected end of file in source map
+
+    node_modules/lucide-react/dist/esm/icons/monitor-stop.js.map:1:0:
+      1 │
+        ╵ ^
+
+  The source map "node_modules/lucide-react/dist/esm/icons/monitor-stop.js.map" was referenced by
+  the file "node_modules/lucide-react/dist/esm/icons/monitor-stop.js" here:
+
+    node_modules/lucide-react/dist/esm/icons/monitor-stop.js:18:21:
+      18 │ //# sourceMappingURL=monitor-stop.js.map
+         ╵                      ~~~~~~~~~~~~~~~~~~~
+
+X [ERROR] Unexpected end of file in source map
+
+    node_modules/lucide-react/dist/esm/icons/mountain-snow.js.map:1:0:
+      1 │
+        ╵ ^
+
+  The source map "node_modules/lucide-react/dist/esm/icons/mountain-snow.js.map" was referenced by
+  the file "node_modules/lucide-react/dist/esm/icons/mountain-snow.js" here:
+
+    node_modules/lucide-react/dist/esm/icons/mountain-snow.js:19:21:
+      19 │ //# sourceMappingURL=mountain-snow.js.map
+         ╵                      ~~~~~~~~~~~~~~~~~~~~
+
+X [ERROR] Unexpected end of file in source map
+
+    node_modules/lucide-react/dist/esm/icons/moon.js.map:1:0:
+      1 │
+        ╵ ^
+
+  The source map "node_modules/lucide-react/dist/esm/icons/moon.js.map" was referenced by the file
+  "node_modules/lucide-react/dist/esm/icons/moon.js" here:
+
+    node_modules/lucide-react/dist/esm/icons/moon.js:15:21:
+      15 │ //# sourceMappingURL=moon.js.map
+         ╵                      ~~~~~~~~~~~
+
+X [ERROR] Unexpected end of file in source map
+
+    node_modules/lucide-react/dist/esm/icons/mountain.js.map:1:0:
+      1 │
+        ╵ ^
+
+  The source map "node_modules/lucide-react/dist/esm/icons/mountain.js.map" was referenced by the
+  file "node_modules/lucide-react/dist/esm/icons/mountain.js" here:
+
+    node_modules/lucide-react/dist/esm/icons/mountain.js:15:21:
+      15 │ //# sourceMappingURL=mountain.js.map
+         ╵                      ~~~~~~~~~~~~~~~
+
+X [ERROR] Unexpected end of file in source map
+
+    node_modules/lucide-react/dist/esm/icons/mouse-off.js.map:1:0:
+      1 │
+        ╵ ^
+
+  The source map "node_modules/lucide-react/dist/esm/icons/mouse-off.js.map" was referenced by the
+  file "node_modules/lucide-react/dist/esm/icons/mouse-off.js" here:
+
+    node_modules/lucide-react/dist/esm/icons/mouse-off.js:18:21:
+      18 │ //# sourceMappingURL=mouse-off.js.map
+         ╵                      ~~~~~~~~~~~~~~~~
+
+X [ERROR] Unterminated string literal
+
+    node_modules/lucide-react/dist/esm/icons/moon-star.js.map:1:512:
+      1 │ ...3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6IC
+        ╵                                                                                                                                                                 ^
+
+  The source map "node_modules/lucide-react/dist/esm/icons/moon-star.js.map" was referenced by the
+  file "node_modules/lucide-react/dist/esm/icons/moon-star.js" here:
+
+    node_modules/lucide-react/dist/esm/icons/moon-star.js:17:21:
+      17 │ //# sourceMappingURL=moon-star.js.map
+         ╵                      ~~~~~~~~~~~~~~~~
+
+C:\Users\HOT\Downloads\21\BuilderArdublock-main\node_modules\vite\node_modules\esbuild\lib\main.js:1472
+  let error = new Error(text);
+              ^
+
+Error: Build failed with 11 errors:
+node_modules/lucide-react/dist/esm/icons/monitor-smartphone.js.map:1:0: ERROR: Unexpected end of file in source map
+node_modules/lucide-react/dist/esm/icons/monitor-speaker.js.map:1:0: ERROR: Unexpected end of file in source map
+node_modules/lucide-react/dist/esm/icons/monitor-stop.js.map:1:0: ERROR: Unexpected end of file in source map
+node_modules/lucide-react/dist/esm/icons/monitor-up.js.map:1:0: ERROR: Unexpected end of file in source map
+node_modules/lucide-react/dist/esm/icons/monitor-x.js.map:1:0: ERROR: Unexpected end of file in source map
+...
+    at failureErrorWithLog (C:\Users\HOT\Downloads\21\BuilderArdublock-main\node_modules\vite\node_modules\esbuild\lib\main.js:1472:15)
+    at C:\Users\HOT\Downloads\21\BuilderArdublock-main\node_modules\vite\node_modules\esbuild\lib\main.js:945:25
+    at C:\Users\HOT\Downloads\21\BuilderArdublock-main\node_modules\vite\node_modules\esbuild\lib\main.js:1353:9
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  errors: [Getter/Setter],
+  warnings: [Getter/Setter]
+}
+
+Node.js v22.15.1
