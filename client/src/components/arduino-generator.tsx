@@ -10,8 +10,8 @@ import { ComponentConfigurator } from './component-configurator';
 import { DebugPanel } from './debug-panel';
 import { PseudocodeOutput } from './pseudocode-output';
 import { HelpModal } from './help-modal';
-import { ARDUINO_MODELS, PROMPT_EXAMPLES } from '@/lib/component-database';
-import { validateComponents, getUsedPinCounts } from '@/lib/pin-validator';
+import { ARDUINO_MODELS, PROMPT_EXAMPLES, getComponentSpec } from '@/lib/component-database';
+import { validateComponents, getUsedPinCounts, parsePins } from '@/lib/pin-validator';
 import { parsePrompt, generatePseudocode } from '@/lib/arduino-parser';
 import { useToast } from '@/hooks/use-toast';
 
@@ -94,22 +94,167 @@ export function ArduinoGenerator() {
     });
   };
 
-  const exportJSON = () => {
-    const exportData: ExportData = {
-      model: selectedModel,
-      prompt: projectPrompt,
-      components,
-      pseudocode,
-      debugReport,
-      timestamp: new Date().toISOString(),
-      version: '1.0.0'
-    };
+  const generateArduinoCode = (): string => {
+    const actions = parsePrompt(projectPrompt, components);
+    const { digital: digitalPins, analog: analogPins } = getUsedPinCounts(components);
     
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    let code = `/*
+ * Arduino Code Generated from ArduBlock Pseudocode Generator
+ * Model: ${ARDUINO_MODELS[selectedModel].name}
+ * Generated: ${new Date().toLocaleDateString()}
+ * Components: ${components.length}
+ * Digital Pins Used: ${digitalPins}
+ * Analog Pins Used: ${analogPins}
+ */
+
+`;
+
+    // Add component definitions
+    code += "// Component Pin Definitions\n";
+    for (const component of components) {
+      const spec = getComponentSpec(component.type, component);
+      if (spec) {
+        code += `// ${spec.name}: ${component.pins}\n`;
+        const pins = parsePins(component.pins);
+        pins.forEach((pin, index) => {
+          if (typeof pin === 'number') {
+            const label = component.label || `${component.type}${index + 1}`;
+            code += `#define ${label.toUpperCase().replace(/\s+/g, '_')}_PIN ${pin}\n`;
+          }
+        });
+      }
+    }
+
+    code += "\nvoid setup() {\n";
+    code += "  // Initialize serial communication\n";
+    code += "  Serial.begin(9600);\n\n";
+    
+    // Add pin modes
+    for (const component of components) {
+      const spec = getComponentSpec(component.type, component);
+      if (spec) {
+        const pins = parsePins(component.pins);
+        pins.forEach((pin, index) => {
+          if (typeof pin === 'number') {
+            const mode = spec.pinTypes[index] === 'digital' && component.type !== 'button' ? 'OUTPUT' : 'INPUT';
+            code += `  pinMode(${pin}, ${mode}); // ${spec.name}\n`;
+          }
+        });
+      }
+    }
+    
+    code += "}\n\nvoid loop() {\n";
+    
+    // Add main loop logic based on actions
+    for (const action of actions) {
+      code += generateCodeForAction(action, components, 1);
+    }
+    
+    code += "}\n";
+    
+    return code;
+  };
+
+  const generateCodeForAction = (action: ParsedAction, components: Component[], indent: number = 0): string => {
+    const spaces = '  '.repeat(indent);
+    let code = '';
+    
+    switch (action.type) {
+      case 'set':
+        if (action.component === 'led' && action.value === 'blink') {
+          code += `${spaces}digitalWrite(${action.pin}, HIGH);\n`;
+          code += `${spaces}delay(${action.duration || 1000});\n`;
+          code += `${spaces}digitalWrite(${action.pin}, LOW);\n`;
+          code += `${spaces}delay(${action.duration || 1000});\n`;
+        } else {
+          const value = action.value === 'HIGH' || action.value === 'on' ? 'HIGH' : 'LOW';
+          code += `${spaces}digitalWrite(${action.pin}, ${value});\n`;
+        }
+        break;
+      case 'delay':
+        code += `${spaces}delay(${action.duration});\n`;
+        break;
+      case 'repeat':
+        code += `${spaces}for (int i = 0; i < ${action.count}; i++) {\n`;
+        if (action.actions) {
+          for (const subAction of action.actions) {
+            code += generateCodeForAction(subAction, components, indent + 1);
+          }
+        }
+        code += `${spaces}}\n`;
+        break;
+      case 'read':
+        code += `${spaces}int sensorValue = digitalRead(${action.pin});\n`;
+        break;
+      case 'print':
+        code += `${spaces}Serial.println("${action.value}");\n`;
+        break;
+    }
+    
+    return code;
+  };
+
+  const exportTXT = () => {
+    let content = `Arduino Project Instructions - ArduBlock.ru Compatible
+========================================================
+
+Project: ${projectPrompt}
+Arduino Model: ${ARDUINO_MODELS[selectedModel].name}
+Generated: ${new Date().toLocaleString()}
+Components: ${components.length}
+
+COMPONENTS CONFIGURATION:
+------------------------
+`;
+    
+    for (const component of components) {
+      const spec = getComponentSpec(component.type, component);
+      if (spec) {
+        content += `• ${spec.name}${component.label ? ` (${component.label})` : ''}\n`;
+        content += `  Pins: ${component.pins}\n`;
+        content += `  ArduBlock Category: ${spec.arduBlockCategory}\n`;
+        content += `  Required Blocks: ${spec.blocks.join(', ')}\n\n`;
+      }
+    }
+
+    content += `ARDUBLOCK.RU INSTRUCTIONS:
+--------------------------
+`;
+    
+    for (const step of pseudocode) {
+      const indent = '  '.repeat(step.level);
+      content += `${indent}${step.text}\n`;
+    }
+
+    content += `
+
+PROJECT DESCRIPTION:
+-------------------
+${projectPrompt}
+
+DEBUG REPORT:
+-------------
+Status: ${debugReport.status.toUpperCase()}
+Digital Pins Used: ${debugReport.digitalPinsUsed}
+Analog Pins Used: ${debugReport.analogPinsUsed}
+Estimated Blocks: ${debugReport.estimatedBlocks}
+`;
+
+    if (debugReport.issues.length > 0) {
+      content += `\nISSUES:\n`;
+      for (const issue of debugReport.issues) {
+        content += `• ${issue.type.toUpperCase()}: ${issue.message}\n`;
+        if (issue.suggestion) {
+          content += `  Suggestion: ${issue.suggestion}\n`;
+        }
+      }
+    }
+
+    const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `arduino-project-${Date.now()}.json`;
+    a.download = `arduino-project-${Date.now()}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -117,7 +262,34 @@ export function ArduinoGenerator() {
     
     toast({
       title: "Export successful",
-      description: "Project configuration downloaded as JSON",
+      description: "Project instructions downloaded as TXT file",
+    });
+  };
+
+  const exportINO = () => {
+    if (debugReport.status === 'error') {
+      toast({
+        title: "Cannot export .ino file",
+        description: "Please fix the errors shown in the debug report first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const code = generateArduinoCode();
+    const blob = new Blob([code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `arduino-project-${Date.now()}.ino`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Export successful",
+      description: "Arduino code downloaded as .ino file",
     });
   };
 
@@ -271,11 +443,19 @@ export function ArduinoGenerator() {
                 <span>Clear Form</span>
               </Button>
               <Button
-                onClick={exportJSON}
-                className="bg-emerald-600 hover:bg-emerald-700 flex items-center justify-center space-x-2"
+                onClick={exportTXT}
+                className="bg-blue-600 hover:bg-blue-700 flex items-center justify-center space-x-2"
               >
                 <Download className="w-4 h-4" />
-                <span>Export JSON</span>
+                <span>Export TXT</span>
+              </Button>
+              <Button
+                onClick={exportINO}
+                className="bg-emerald-600 hover:bg-emerald-700 flex items-center justify-center space-x-2"
+                disabled={debugReport.status === 'error'}
+              >
+                <Download className="w-4 h-4" />
+                <span>Export INO</span>
               </Button>
             </div>
           </div>
