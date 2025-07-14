@@ -58,16 +58,36 @@ npm install
 ```
 
 3. Start the development server:
+
+**Linux/macOS:**
 ```bash
 npm run dev
 ```
 
-4. Or use the batch file (Windows):
-```bash
-start.bat
+**Windows (Command Prompt):**
+```cmd
+# Use the provided batch file (recommended)
+start-windows.bat
+
+# Or manually set environment and run
+set NODE_ENV=development && npx tsx server/index.ts
+```
+
+**Windows (PowerShell):**
+```powershell
+# Use the PowerShell script
+./start-windows.ps1
+
+# Or manually set environment and run
+$env:NODE_ENV="development"; npx tsx server/index.ts
 ```
 
 The application will be available at `http://localhost:5000`
+
+### Windows-Specific Notes
+- If you see the error `'NODE_ENV' is not recognized`, use the provided `start-windows.bat` file
+- The application includes automatic port management to handle conflicts
+- See `README-Windows.md` for detailed Windows setup instructions
 
 ## Usage Examples
 

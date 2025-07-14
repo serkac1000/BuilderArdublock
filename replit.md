@@ -110,6 +110,8 @@ The application is designed as a single-page application with a Node.js backend,
 - **Port Management System**: Intelligent port conflict resolution that automatically kills existing processes on port 5000 and restarts the server
 - **Enhanced Component Validation**: Updated validation system to handle custom components with proper pin type checking
 - **Improved Error Handling**: Graceful shutdown handling and robust restart mechanisms
+- **Windows Compatibility**: Added Windows batch files and PowerShell scripts for easy startup on Windows systems
+- **Cross-Platform Support**: Comprehensive setup guides for Windows, macOS, and Linux environments
 
 ### Git Repository Preparation (January 2025)
 - Added comprehensive README.md with project documentation
