@@ -49,6 +49,9 @@ The application has built-in port management that automatically kills processes 
 2. Restart your terminal/command prompt
 3. Run the start script again
 
+### Socket Error (ENOTSUP) on Windows
+This error occurs because Windows doesn't support binding to 0.0.0.0 on certain ports. The application automatically detects Windows and uses localhost (127.0.0.1) instead. This is handled automatically in the updated code.
+
 ### Node.js Not Found
 1. Download and install Node.js from https://nodejs.org/
 2. Restart your terminal/command prompt

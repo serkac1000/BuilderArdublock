@@ -32,5 +32,8 @@ echo Starting development server...
 echo The server will be available at http://localhost:5000
 echo Press Ctrl+C to stop the server
 echo.
+echo Note: The server is configured to use localhost (127.0.0.1) on Windows
+echo This resolves the ENOTSUP socket error on Windows systems
+echo.
 set NODE_ENV=development
 npx tsx server/index.ts

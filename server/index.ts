@@ -112,15 +112,19 @@ app.use((req, res, next) => {
   // It is the only port that is not firewalled.
   const port = 5000;
   
+  // Detect if running on Windows to use appropriate host
+  const isWindows = process.platform === 'win32';
+  const host = isWindows ? '127.0.0.1' : '0.0.0.0';
+  
   // Kill any existing process on port 5000 before starting
   await killProcessOnPort(port);
   
   server.listen({
     port,
-    host: "0.0.0.0",
-    reusePort: true,
+    host,
+    reusePort: !isWindows, // Windows doesn't support reusePort
   }, () => {
-    log(`serving on port ${port}`);
+    log(`serving on port ${port} (host: ${host})`);
   });
 
   // Handle server errors, especially port conflicts
@@ -133,10 +137,10 @@ app.use((req, res, next) => {
       setTimeout(() => {
         server.listen({
           port,
-          host: "0.0.0.0",
-          reusePort: true,
+          host,
+          reusePort: !isWindows,
         }, () => {
-          log(`serving on port ${port} after restart`);
+          log(`serving on port ${port} after restart (host: ${host})`);
         });
       }, 2000);
     } else {
