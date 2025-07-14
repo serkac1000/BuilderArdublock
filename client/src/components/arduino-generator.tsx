@@ -37,7 +37,7 @@ export function ArduinoGenerator() {
     estimatedBlocks: '8-12'
   });
   const [pseudocode, setPseudocode] = useState<PseudocodeStep[]>([]);
-  const [showPseudocode, setShowPseudocode> = useState(true);
+  const [showPseudocode, setShowPseudocode] = useState(true);
   const [showHelp, setShowHelp] = useState(false);
   const [aiGeneratedCode, setAiGeneratedCode] = useState<string>('');
   const [aiExplanation, setAiExplanation] = useState<string>('');
