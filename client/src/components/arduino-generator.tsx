@@ -1,6 +1,4 @@
-` tags.
-```
-<replit_final_file>
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -512,8 +510,6 @@ Estimated Blocks: ${debugReport.estimatedBlocks}
     }
     return false;
   };
-
-  
 
   return (
     <div className="min-h-screen bg-slate-50">
