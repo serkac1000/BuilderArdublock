@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Play, Eraser, Download, Edit, HelpCircle, Moon, Microchip, Wifi } from 'lucide-react';
+import { Play, Eraser, Download, Edit, HelpCircle, Moon, Microchip, Wifi, Sparkles, Lightbulb } from 'lucide-react';
 import { ArduinoModel, Component, DebugReport, PseudocodeStep, ExportData } from '@/types/arduino';
 import { ComponentConfigurator } from './component-configurator';
 import { DebugPanel } from './debug-panel';
@@ -14,6 +14,7 @@ import { ARDUINO_MODELS, PROMPT_EXAMPLES, getComponentSpec } from '@/lib/compone
 import { validateComponents, getUsedPinCounts, parsePins } from '@/lib/pin-validator';
 import { parsePrompt, generatePseudocode } from '@/lib/arduino-parser';
 import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 
 export function ArduinoGenerator() {
   const [selectedModel, setSelectedModel] = useState<ArduinoModel>('uno');
@@ -33,6 +34,11 @@ export function ArduinoGenerator() {
   const [pseudocode, setPseudocode] = useState<PseudocodeStep[]>([]);
   const [showPseudocode, setShowPseudocode] = useState(true);
   const [showHelp, setShowHelp] = useState(false);
+  const [aiGeneratedCode, setAiGeneratedCode] = useState<string>('');
+  const [aiExplanation, setAiExplanation] = useState<string>('');
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  const [isGeneratingWithAI, setIsGeneratingWithAI] = useState(false);
+  const [isGeneratingComponents, setIsGeneratingComponents] = useState(false);
   
   const { toast } = useToast();
 
@@ -80,6 +86,91 @@ export function ArduinoGenerator() {
         description: "Unable to parse the project description. Please check your prompt.",
         variant: "destructive",
       });
+    }
+  };
+
+  const generateWithAI = async () => {
+    if (debugReport.status === 'error') {
+      toast({
+        title: "Cannot generate code",
+        description: "Please fix the errors shown in the debug report first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingWithAI(true);
+    try {
+      const response = await apiRequest('/api/generate-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: projectPrompt,
+          components: components.map(c => ({
+            type: c.type,
+            pins: c.pins,
+            label: c.label
+          })),
+          arduinoModel: selectedModel
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAiGeneratedCode(data.code);
+        setAiExplanation(data.explanation);
+        setAiSuggestions(data.suggestions || []);
+        
+        toast({
+          title: "AI code generated",
+          description: "Complete Arduino code generated successfully",
+        });
+      } else {
+        throw new Error('Failed to generate code');
+      }
+    } catch (error) {
+      toast({
+        title: "AI generation failed",
+        description: "Failed to generate code with AI. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingWithAI(false);
+    }
+  };
+
+  const suggestComponents = async () => {
+    setIsGeneratingComponents(true);
+    try {
+      const response = await apiRequest('/api/suggest-components', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: projectPrompt
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast({
+          title: "Component suggestions",
+          description: `Suggested: ${data.suggestions.join(', ')}`,
+        });
+      } else {
+        throw new Error('Failed to suggest components');
+      }
+    } catch (error) {
+      toast({
+        title: "Suggestion failed",
+        description: "Failed to suggest components. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingComponents(false);
     }
   };
 
@@ -425,14 +516,31 @@ Estimated Blocks: ${debugReport.estimatedBlocks}
             />
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-wrap gap-3">
               <Button
                 onClick={generateCode}
-                className="flex-1 flex items-center justify-center space-x-2"
+                className="bg-green-600 hover:bg-green-700 flex items-center justify-center space-x-2 flex-1 sm:flex-none"
                 disabled={debugReport.status === 'error'}
               >
                 <Play className="w-4 h-4" />
                 <span>Generate Pseudocode</span>
+              </Button>
+              <Button
+                onClick={generateWithAI}
+                className="bg-purple-600 hover:bg-purple-700 flex items-center justify-center space-x-2"
+                disabled={debugReport.status === 'error' || isGeneratingWithAI}
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>{isGeneratingWithAI ? 'Generating...' : 'AI Generate'}</span>
+              </Button>
+              <Button
+                onClick={suggestComponents}
+                variant="outline"
+                className="flex items-center justify-center space-x-2"
+                disabled={isGeneratingComponents || !projectPrompt.trim()}
+              >
+                <Lightbulb className="w-4 h-4" />
+                <span>{isGeneratingComponents ? 'Suggesting...' : 'Suggest Components'}</span>
               </Button>
               <Button
                 variant="outline"
@@ -474,6 +582,57 @@ Estimated Blocks: ${debugReport.estimatedBlocks}
             onToggle={() => setShowPseudocode(!showPseudocode)}
           />
         </div>
+
+        {/* AI Generated Code Output */}
+        {aiGeneratedCode && (
+          <div className="mt-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Sparkles className="w-5 h-5 text-purple-600" />
+                  <span>AI Generated Arduino Code</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {aiExplanation && (
+                    <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                      <h4 className="font-medium text-purple-900 mb-2">Explanation:</h4>
+                      <p className="text-purple-800">{aiExplanation}</p>
+                    </div>
+                  )}
+                  
+                  <div className="relative">
+                    <pre className="bg-slate-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm font-mono">
+                      <code>{aiGeneratedCode}</code>
+                    </pre>
+                    <Button
+                      onClick={() => navigator.clipboard.writeText(aiGeneratedCode)}
+                      className="absolute top-2 right-2 bg-slate-700 hover:bg-slate-600 text-white p-2"
+                      size="sm"
+                    >
+                      Copy
+                    </Button>
+                  </div>
+
+                  {aiSuggestions.length > 0 && (
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h4 className="font-medium text-blue-900 mb-2">AI Suggestions:</h4>
+                      <ul className="text-blue-800 space-y-1">
+                        {aiSuggestions.map((suggestion, index) => (
+                          <li key={index} className="flex items-start">
+                            <span className="text-blue-600 mr-2">•</span>
+                            {suggestion}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
 
       {/* Help Modal */}

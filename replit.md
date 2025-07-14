@@ -116,6 +116,9 @@ The application is designed as a single-page application with a Node.js backend,
 - **Environment Configuration**: Enhanced Windows startup scripts with proper NODE_ENV handling and informative output
 - **Dependency Management**: Added automatic dependency detection and installation to Windows batch files
 - **Tested Windows Compatibility**: Confirmed working on Windows systems with start-simple.bat providing reliable startup
+- **AI Integration**: Added Gemini AI-powered code generation for complete Arduino sketches
+- **Component Suggestions**: AI-powered component recommendations based on project descriptions
+- **Enhanced UI**: Fixed component dropdown selection issue and added AI features to interface
 
 ### Git Repository Preparation (January 2025)
 - Added comprehensive README.md with project documentation

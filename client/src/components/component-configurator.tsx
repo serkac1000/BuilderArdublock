@@ -233,16 +233,28 @@ export function ComponentConfigurator({
                     <Label className="text-sm font-medium text-slate-700 mb-1">
                       Component Type
                     </Label>
-                    <div className="text-sm p-2 bg-white border rounded-md">
-                      {component.type === 'custom' && component.customName ? (
+                    {component.type === 'custom' ? (
+                      <div className="text-sm p-2 bg-white border rounded-md">
                         <span className="font-medium">{component.customName}</span>
-                      ) : (
-                        COMPONENT_DATABASE[component.type]?.name || component.type
-                      )}
-                      {component.type === 'custom' && (
                         <span className="text-slate-500 ml-2">(Custom)</span>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      <Select 
+                        value={component.type} 
+                        onValueChange={(value) => updateComponent(component.id, 'type', value as ComponentType)}
+                      >
+                        <SelectTrigger className="text-sm">
+                          <SelectValue placeholder="Select component type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(COMPONENT_DATABASE).map(([key, spec]) => (
+                            <SelectItem key={key} value={key}>
+                              {spec.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-slate-700 mb-1">
