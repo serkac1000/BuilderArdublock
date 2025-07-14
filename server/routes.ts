@@ -24,18 +24,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI-powered Arduino code generation
   app.post("/api/generate-code", async (req, res) => {
     try {
+      const apiKey = process.env.GEMINI_API_KEY?.trim();
       console.log("Received code generation request:", {
-        hasApiKey: !!process.env.GEMINI_API_KEY,
-        apiKeyLength: process.env.GEMINI_API_KEY?.length || 0,
+        hasApiKey: !!apiKey,
+        apiKeyLength: apiKey?.length || 0,
+        apiKeyPrefix: apiKey ? apiKey.substring(0, 8) + "..." : "none",
         bodyKeys: Object.keys(req.body),
         prompt: req.body.prompt?.substring(0, 50) + "..." // Log first 50 chars
       });
       
       // Check API key first
-      if (!process.env.GEMINI_API_KEY) {
+      if (!apiKey || apiKey.length < 30) {
         return res.status(400).json({
-          error: "API key not configured",
-          details: "Please set your Gemini API key in the settings"
+          error: "Invalid API key",
+          details: "Please set a valid Gemini API key in the settings"
         });
       }
       

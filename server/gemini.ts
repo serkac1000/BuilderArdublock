@@ -39,6 +39,12 @@ export async function generateArduinoCode(request: ArduinoCodeRequest): Promise<
     throw new Error("Gemini API key is not configured. Please set your API key in the settings.");
   }
   
+  // Validate API key format
+  const apiKey = process.env.GEMINI_API_KEY.trim();
+  if (apiKey.length < 30) {
+    throw new Error("Invalid Gemini API key format. Please check your API key.");
+  }
+  
   const componentsDescription = components.map(c => 
     `${c.label || c.type} (${c.type}) on pin(s) ${c.pins}`
   ).join(', ');
@@ -65,10 +71,12 @@ Respond with JSON in this exact format:
 
   try {
     console.log("Generating Arduino code with Gemini API...");
-    console.log("API Key length:", process.env.GEMINI_API_KEY?.length || 0);
+    console.log("API Key length:", apiKey.length);
+    console.log("API Key prefix:", apiKey.substring(0, 8) + "...");
     console.log("Request:", { prompt, components: components.length, arduinoModel });
     
-    const genAI = getGeminiClient();
+    // Create a fresh instance with the current API key
+    const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ 
       model: "gemini-1.5-flash",
       generationConfig: {
@@ -133,12 +141,18 @@ Respond with JSON in this exact format:
     console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
     
     if (error instanceof Error) {
-      if (error.message.includes("API_KEY") || error.message.includes("401")) {
+      const errorMessage = error.message.toLowerCase();
+      
+      if (errorMessage.includes("permission_denied") || errorMessage.includes("403")) {
+        throw new Error("Invalid or unauthorized Gemini API key. Please verify your API key is correct and has the necessary permissions.");
+      } else if (errorMessage.includes("api_key") || errorMessage.includes("401")) {
         throw new Error("Invalid Gemini API key. Please check your API key in settings.");
-      } else if (error.message.includes("quota") || error.message.includes("429")) {
+      } else if (errorMessage.includes("quota") || errorMessage.includes("429")) {
         throw new Error("API quota exceeded. Please check your Gemini API usage limits.");
-      } else if (error.message.includes("network") || error.message.includes("fetch")) {
+      } else if (errorMessage.includes("network") || errorMessage.includes("fetch")) {
         throw new Error("Network error connecting to Gemini API. Please try again.");
+      } else if (errorMessage.includes("unregistered callers")) {
+        throw new Error("API key authentication failed. Please ensure your Gemini API key is valid and properly configured.");
       }
     }
     
@@ -152,7 +166,8 @@ export async function suggestComponents(prompt: string): Promise<string[]> {
       throw new Error("Gemini API key is not configured.");
     }
 
-    const genAI = getGeminiClient();
+    const apiKey = process.env.GEMINI_API_KEY.trim();
+    const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ 
       model: "gemini-1.5-flash",
       generationConfig: {
