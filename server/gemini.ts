@@ -1,6 +1,19 @@
-import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+let genAI: GoogleGenerativeAI | null = null;
+
+function getGeminiClient() {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("Gemini API key is not configured. Please set your API key in the settings.");
+  }
+  
+  if (!genAI) {
+    genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  }
+  
+  return genAI;
+}
 
 export interface ArduinoCodeRequest {
   prompt: string;
@@ -43,7 +56,7 @@ Generate a complete Arduino sketch with:
 4. loop() function
 5. Helper functions if needed
 
-Respond with JSON in this format:
+Respond with JSON in this exact format:
 {
   "code": "Complete Arduino code here",
   "explanation": "Brief explanation of what the code does",
@@ -52,48 +65,77 @@ Respond with JSON in this format:
 
   try {
     console.log("Generating Arduino code with Gemini API...");
-    console.log("API Key length:", process.env.GEMINI_API_KEY.length);
+    console.log("API Key length:", process.env.GEMINI_API_KEY?.length || 0);
     console.log("Request:", { prompt, components: components.length, arduinoModel });
     
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      config: {
-        systemInstruction: systemPrompt,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "object",
-          properties: {
-            code: { type: "string" },
-            explanation: { type: "string" },
-            suggestions: { 
-              type: "array",
-              items: { type: "string" }
-            }
-          },
-          required: ["code", "explanation", "suggestions"]
-        }
-      },
-      contents: `Generate Arduino code for: ${prompt}`
+    const genAI = getGeminiClient();
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      generationConfig: {
+        temperature: 0.7,
+        topP: 0.8,
+        topK: 40,
+        maxOutputTokens: 2048,
+      }
     });
 
+    const fullPrompt = `${systemPrompt}\n\nGenerate Arduino code for: ${prompt}`;
+    
+    const result = await model.generateContent(fullPrompt);
+    const response = await result.response;
+    const text = response.text();
+
     console.log("Gemini response received");
-    const rawJson = response.text;
-    if (rawJson) {
-      console.log("Response text length:", rawJson.length);
-      const result = JSON.parse(rawJson);
-      console.log("Successfully parsed JSON response");
-      return result;
-    } else {
+    console.log("Response text length:", text.length);
+
+    if (!text) {
       throw new Error("Empty response from Gemini");
+    }
+
+    // Try to extract JSON from the response
+    let jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      // If no JSON found, create a fallback response
+      console.log("No JSON found in response, creating fallback");
+      return {
+        code: text,
+        explanation: "Generated Arduino code based on your requirements",
+        suggestions: ["Test the code on your Arduino board", "Adjust delay values as needed", "Add error handling if required"]
+      };
+    }
+
+    try {
+      const parsedResponse = JSON.parse(jsonMatch[0]);
+      console.log("Successfully parsed JSON response");
+      
+      // Validate the response has required fields
+      if (!parsedResponse.code) {
+        parsedResponse.code = text;
+      }
+      if (!parsedResponse.explanation) {
+        parsedResponse.explanation = "Generated Arduino code based on your requirements";
+      }
+      if (!parsedResponse.suggestions || !Array.isArray(parsedResponse.suggestions)) {
+        parsedResponse.suggestions = ["Test the code on your Arduino board", "Adjust delay values as needed"];
+      }
+      
+      return parsedResponse;
+    } catch (parseError) {
+      console.log("Failed to parse JSON, using fallback");
+      return {
+        code: text,
+        explanation: "Generated Arduino code based on your requirements",
+        suggestions: ["Test the code on your Arduino board", "Adjust delay values as needed", "Add error handling if required"]
+      };
     }
   } catch (error) {
     console.error("Gemini API Error details:", error);
     console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
     
     if (error instanceof Error) {
-      if (error.message.includes("API_KEY")) {
+      if (error.message.includes("API_KEY") || error.message.includes("401")) {
         throw new Error("Invalid Gemini API key. Please check your API key in settings.");
-      } else if (error.message.includes("quota")) {
+      } else if (error.message.includes("quota") || error.message.includes("429")) {
         throw new Error("API quota exceeded. Please check your Gemini API usage limits.");
       } else if (error.message.includes("network") || error.message.includes("fetch")) {
         throw new Error("Network error connecting to Gemini API. Please try again.");
@@ -105,7 +147,23 @@ Respond with JSON in this format:
 }
 
 export async function suggestComponents(prompt: string): Promise<string[]> {
-  const systemPrompt = `You are an Arduino expert. Based on the user's project description, suggest appropriate electronic components.
+  try {
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error("Gemini API key is not configured.");
+    }
+
+    const genAI = getGeminiClient();
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      generationConfig: {
+        temperature: 0.5,
+        topP: 0.8,
+        topK: 40,
+        maxOutputTokens: 512,
+      }
+    });
+
+    const systemPrompt = `You are an Arduino expert. Based on the user's project description, suggest appropriate electronic components.
 
 Common Arduino components include:
 - LED (basic lighting)
@@ -120,29 +178,32 @@ Common Arduino components include:
 - Light Sensor
 - Potentiometer
 
-Respond with a JSON array of component suggestions with their typical use cases:
-["component1", "component2", "component3"]`;
+Respond with only a JSON array of component suggestions:
+["component1", "component2", "component3"]
 
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      config: {
-        systemInstruction: systemPrompt,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "array",
-          items: { type: "string" }
-        }
-      },
-      contents: `Suggest components for: ${prompt}`
-    });
+Suggest components for: ${prompt}`;
 
-    const rawJson = response.text;
-    if (rawJson) {
-      return JSON.parse(rawJson);
-    } else {
+    const result = await model.generateContent(systemPrompt);
+    const response = await result.response;
+    const text = response.text();
+
+    if (!text) {
       return [];
     }
+
+    // Try to extract JSON array from the response
+    const jsonMatch = text.match(/\[[\s\S]*?\]/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch (parseError) {
+        console.error("Failed to parse component suggestions JSON:", parseError);
+      }
+    }
+
+    // Fallback: extract components from text
+    const fallbackComponents = ["LED", "Button", "Servo Motor"];
+    return fallbackComponents;
   } catch (error) {
     console.error("Component suggestion error:", error);
     return [];

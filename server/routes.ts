@@ -26,9 +26,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Received code generation request:", {
         hasApiKey: !!process.env.GEMINI_API_KEY,
+        apiKeyLength: process.env.GEMINI_API_KEY?.length || 0,
         bodyKeys: Object.keys(req.body),
-        prompt: req.body.prompt?.substring(0, 100) + "..." // Log first 100 chars
+        prompt: req.body.prompt?.substring(0, 50) + "..." // Log first 50 chars
       });
+      
+      // Check API key first
+      if (!process.env.GEMINI_API_KEY) {
+        return res.status(400).json({
+          error: "API key not configured",
+          details: "Please set your Gemini API key in the settings"
+        });
+      }
       
       const request: ArduinoCodeRequest = req.body;
       
@@ -40,6 +49,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Validate components array
+      if (!Array.isArray(request.components)) {
+        request.components = [];
+      }
+      
       const result = await generateArduinoCode(request);
       console.log("Code generation successful");
       res.json(result);
@@ -47,8 +61,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Code generation error:", error);
       console.error("Error details:", {
         message: error instanceof Error ? error.message : "Unknown error",
-        stack: error instanceof Error ? error.stack : "No stack trace"
+        stack: error instanceof Error ? error.stack : "No stack trace",
+        name: error instanceof Error ? error.name : "Unknown",
+        cause: error instanceof Error ? error.cause : undefined
       });
+      
+      // Return more specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes("API key")) {
+          return res.status(401).json({ 
+            error: "Invalid API key",
+            details: error.message
+          });
+        } else if (error.message.includes("quota")) {
+          return res.status(429).json({ 
+            error: "API quota exceeded",
+            details: error.message
+          });
+        } else if (error.message.includes("network")) {
+          return res.status(503).json({ 
+            error: "Network error",
+            details: error.message
+          });
+        }
+      }
       
       res.status(500).json({ 
         error: "Failed to generate Arduino code",
