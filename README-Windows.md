@@ -3,9 +3,11 @@
 ## Quick Start for Windows
 
 ### Method 1: Using the Batch File (Recommended)
-1. Double-click `start-windows.bat`
-2. The script will automatically install dependencies and start the server
+1. **Full Setup**: Double-click `start-windows.bat` (installs dependencies and starts server)
+2. **Simple Start**: Double-click `start-simple.bat` (just starts server without dependency check)
 3. Open your browser to `http://localhost:5000`
+
+**Note**: If `start-windows.bat` doesn't work, try `start-simple.bat` or the manual method below.
 
 ### Method 2: Manual Commands
 Open Command Prompt or PowerShell in the project directory and run:

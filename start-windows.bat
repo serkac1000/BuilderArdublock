@@ -20,7 +20,7 @@ if errorlevel 1 (
 )
 
 echo Installing dependencies...
-npm install
+call npm install
 if errorlevel 1 (
     echo ERROR: Failed to install dependencies
     pause
@@ -38,4 +38,12 @@ echo.
 echo Setting NODE_ENV=development for proper development mode...
 set NODE_ENV=development
 echo Environment configured. Starting server...
-npx tsx server/index.ts
+echo.
+call npx tsx server/index.ts
+if errorlevel 1 (
+    echo.
+    echo ERROR: Server failed to start
+    echo Try running manually: set NODE_ENV=development ^&^& npx tsx server/index.ts
+    pause
+    exit /b 1
+)
