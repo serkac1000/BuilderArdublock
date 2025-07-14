@@ -31,12 +31,18 @@ if not exist node_modules (
     )
 )
 
-REM Start the development server
+REM First, install dependencies (REQUIRED)
+echo Installing dependencies...
+npm install
+if errorlevel 1 (
+    echo Error: Failed to install dependencies
+    pause
+    exit /b 1
+)
+
+REM Then start the development server
 echo Starting development server...
 echo Open http://localhost:5000 in your browser
 echo Press Ctrl+C to stop the server
 echo.
-echo Alternative: If npm run dev doesn't work, try this manual command:
-echo set NODE_ENV=development ^&^& npx tsx server/index.ts
-echo.
-npm run dev
+set NODE_ENV=development && npx tsx server/index.ts
