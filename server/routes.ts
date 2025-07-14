@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { generateArduinoCode, suggestComponents, type ArduinoCodeRequest } from "./gemini";
+import { addTestRoutes } from "./test-api";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
@@ -44,6 +45,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Add test routes for debugging
+  addTestRoutes(app);
 
   const httpServer = createServer(app);
 
