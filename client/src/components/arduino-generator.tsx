@@ -101,20 +101,14 @@ export function ArduinoGenerator() {
 
     setIsGeneratingWithAI(true);
     try {
-      const response = await apiRequest('/api/generate-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: projectPrompt,
-          components: components.map(c => ({
-            type: c.type,
-            pins: c.pins,
-            label: c.label
-          })),
-          arduinoModel: selectedModel
-        })
+      const response = await apiRequest('POST', '/api/generate-code', {
+        prompt: projectPrompt,
+        components: components.map(c => ({
+          type: c.type,
+          pins: c.pins,
+          label: c.label
+        })),
+        arduinoModel: selectedModel
       });
 
       if (response.ok) {
@@ -144,14 +138,8 @@ export function ArduinoGenerator() {
   const suggestComponents = async () => {
     setIsGeneratingComponents(true);
     try {
-      const response = await apiRequest('/api/suggest-components', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: projectPrompt
-        })
+      const response = await apiRequest('POST', '/api/suggest-components', {
+        prompt: projectPrompt
       });
 
       if (response.ok) {
